@@ -1,0 +1,19 @@
+[package]
+name = "josengine"
+version = "0.1.0"
+edition = "2024"
+
+
+[build-dependencies]
+cc = "1"
+
+[dependencies]
+rand = "0.9"
+smallvec = "1.15.1"
+pixels = "0.13"
+winit  = {version = "0.29", default-features = false, features = ["rwh_05", "x11"]}
+winit_input_helper = "0.15"
+gilrs = "0.11.0"
+mimalloc = "0.1"
+libc = "0.2.175"
+bumpalo = "3.19.0"
