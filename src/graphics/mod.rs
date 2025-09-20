@@ -8,5 +8,5 @@
 
 pub mod renderer;
 pub mod sprites;
-//pub mod texthandler;
+pub mod texthandler;
 pub mod parse_ttf_bindings;

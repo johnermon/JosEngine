@@ -34,17 +34,61 @@ impl<'a> SizedGlyph<'a>{
     pub fn push_ranges(&mut self,font_index:usize ,atlas:&mut JosieVec<u8>, loaded_glyph:&LoadedGlyph){
         unsafe{atlas.bulk_extend_guarded(ExtendType::Ammortized, |start_ptr,end_ptr|{
             //creates working josievecs
-            let working_transparent_ranges:JosieVec<GlyphRange> = JosieVec::with_capacity(loaded_glyph.size);
-            let working_solid_ranges:JosieVec<GlyphRange> = JosieVec::with_capacity(loaded_glyph.size);
+            let mut translucent_ranges:JosieVec<GlyphRange> = JosieVec::with_capacity(loaded_glyph.size);
+            let mut solid_ranges:JosieVec<GlyphRange> = JosieVec::with_capacity(loaded_glyph.size);
             //the most disgusting typecast i think i have ever done lol, needed to 
-            let start = &mut *(start_ptr as *mut *mut u8 as *mut *mut GlyphRange);
+            let ptr =
+                {
+                    let offset = start_ptr.align_offset(align_of::<GlyphRange>());
+                    start_ptr.add(offset);
+                    &mut *(start_ptr as *mut *mut u8 as *mut *mut GlyphRange)
+                };
             //creates a new slice contaning all the sprite data
-            let glyph_slice = from_raw_parts(loaded_glyph.ptr, loaded_glyph.size);
-            let iter = glyph_slice.iter().peekable();
-            for element in iter{
+            let glyph_data = loaded_glyph.as_slice();
+            //chunks the glyph sprite into lines to be processed 
+            let lines = glyph_data.chunks_exact(loaded_glyph.width as usize);
+            //iterates through the chunks in lines and enumerates them with a line number
+            for (line,data) in lines.enumerate(){
+                //creates variable curr index which holds the indsex at which the current range starts
+                let mut range_begin = 0usize;
+                // creates new iteration over the lines
+                for (i, (curr,next)) in data.iter()
+                //zips in next value with current value
+                .zip(data.iter().skip(1))
+                //maps curr and next with derferenced versions and enumerates
+                .map(|(curr,next)|(*curr, *next)).enumerate(){
+                    //if current pixel is not equal to the next or at the end of a line, push the current range to the requestie vec
+                    if curr != next || data.len() == i{
+                        match_ranges(&mut translucent_ranges,  &mut solid_ranges, curr,line, range_begin, i);
+                        range_begin = i
+                    }
+                }
             }
         })};
     }
+}
+//helper function to make my code a bit cleaner, takes in the current pixel value and pushes the glyph range struct to the correct buffer.
+fn match_ranges(translucent_ranges:&mut JosieVec<GlyphRange>, solid_ranges: &mut JosieVec<GlyphRange>, curr:u8, line:usize, range_begin:usize, i:usize){
+    match curr{
+        255=>{
+            solid_ranges.push(
+                GlyphRange {
+                    line,
+                    range:range_begin..i
+                }
+            );
+        }
+        0=>(),
+        _=>{
+            translucent_ranges.push(
+                GlyphRange {
+                    line,
+                    range:range_begin..i
+                }
+            );
+        }
+    }
+
 }
 
 pub(crate) struct FontAtlas{
@@ -80,7 +124,7 @@ pub fn create_sized_font<'a>(loaded_font:&mut LoadedFont, font_size:f32, charset
     sized_font.atlas.reserve_exact(9*(font_size as usize)^2 + charset.len()*4);
     //iterates through the charset
     for char in charset.iter().map(|char|char.clone()){
-        let glyph = generate_glyph(loaded_font, char, font_size).expect(&format!("faileds to generate glyph {}", char));
+        let glyph = generate_glyph(loaded_font, char, font_size).expect(&format!("faileds to generate glyph {}", char));=
         unsafe{
             //copies the content of the memory allocation to the point on the vector
             copy_nonoverlapping(glyph.ptr, sized_font.atlas.as_mut_ptr().add(sized_font.atlas.len()), glyph.size);

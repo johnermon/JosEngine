@@ -17,4 +17,4 @@ gilrs = "0.11.0"
 mimalloc = "0.1"
 libc = "0.2.175"
 bumpalo = "3.19.0"
-josie_collections = {git = https://github.com/johnermon/JosieVec"}
+josie_collections = {git = "https://github.com/johnermon/JosieVec"}

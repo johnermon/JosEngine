@@ -101,7 +101,7 @@ impl Drop for LoadedFont{
 #[repr(C)]
 #[derive(Debug)]
 pub struct LoadedGlyph{
-    ptr: *mut c_uchar,
+    pub ptr: *mut c_uchar,
     pub size: usize,
     pub width:c_int, pub height:c_int,
     pub xoff:c_int, pub yoff:c_int,
@@ -119,7 +119,7 @@ impl LoadedGlyph{
         todo!();
     }
     //function only used internally, returns a slice based off of 
-    fn as_slice(&self) -> &[u8]{
+    pub(crate) fn as_slice(&self) -> &[u8]{
         //unsafe sets fat pointer stored in glyph to a immutable slice in the memory. immediately after function is called,
         //glyph is dropped and drop trait deallocates the memory held in the pointer so the data this is pointing to goes
         //out of scope at the same time as the slice itself. so it is memory safe. additionally, any invariants regarding
